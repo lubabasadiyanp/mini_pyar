@@ -1,0 +1,113 @@
+{
+  "backend_requested": true,
+  "generated_conformers": 5,
+  "package_version": "1.2.0",
+  "records": [
+    {
+      "backend_energy": -68.998033304851,
+      "backend_path": "/home/lubaba/crest_xtb_validation/conformers/backend/job_conf_0000/result_conf_0000.xyz",
+      "backend_status": "success",
+      "force_field": "mmff",
+      "name": "conf_0000",
+      "rank": 0,
+      "rdkit_energy": -30.870298765923863,
+      "rdkit_path": "/home/lubaba/crest_xtb_validation/conformers/rdkit/conf_0000.xyz",
+      "rdkit_status": "not_converged",
+      "selected_path": "/home/lubaba/crest_xtb_validation/conformers/selected/conf_0000.xyz",
+      "source_conf_id": 3
+    },
+    {
+      "backend_energy": -68.992643241782,
+      "backend_path": "/home/lubaba/crest_xtb_validation/conformers/backend/job_conf_0001/result_conf_0001.xyz",
+      "backend_status": "success",
+      "force_field": "mmff",
+      "name": "conf_0001",
+      "rank": 1,
+      "rdkit_energy": -27.498837144763094,
+      "rdkit_path": "/home/lubaba/crest_xtb_validation/conformers/rdkit/conf_0001.xyz",
+      "rdkit_status": "not_converged",
+      "selected_path": "/home/lubaba/crest_xtb_validation/conformers/selected/conf_0003.xyz",
+      "source_conf_id": 0
+    },
+    {
+      "backend_energy": -68.99550774866,
+      "backend_path": "/home/lubaba/crest_xtb_validation/conformers/backend/job_conf_0002/result_conf_0002.xyz",
+      "backend_status": "success",
+      "force_field": "mmff",
+      "name": "conf_0002",
+      "rank": 2,
+      "rdkit_energy": -24.209393347211382,
+      "rdkit_path": "/home/lubaba/crest_xtb_validation/conformers/rdkit/conf_0002.xyz",
+      "rdkit_status": "converged",
+      "selected_path": "/home/lubaba/crest_xtb_validation/conformers/selected/conf_0001.xyz",
+      "source_conf_id": 4
+    },
+    {
+      "backend_energy": -68.994129651491,
+      "backend_path": "/home/lubaba/crest_xtb_validation/conformers/backend/job_conf_0003/result_conf_0003.xyz",
+      "backend_status": "success",
+      "force_field": "mmff",
+      "name": "conf_0003",
+      "rank": 3,
+      "rdkit_energy": -22.264078591904706,
+      "rdkit_path": "/home/lubaba/crest_xtb_validation/conformers/rdkit/conf_0003.xyz",
+      "rdkit_status": "not_converged",
+      "selected_path": "/home/lubaba/crest_xtb_validation/conformers/selected/conf_0002.xyz",
+      "source_conf_id": 1
+    },
+    {
+      "backend_energy": -68.991187375652,
+      "backend_path": "/home/lubaba/crest_xtb_validation/conformers/backend/job_conf_0004/result_conf_0004.xyz",
+      "backend_status": "success",
+      "force_field": "mmff",
+      "name": "conf_0004",
+      "rank": 4,
+      "rdkit_energy": -19.716344108709066,
+      "rdkit_path": "/home/lubaba/crest_xtb_validation/conformers/rdkit/conf_0004.xyz",
+      "rdkit_status": "not_converged",
+      "selected_path": "/home/lubaba/crest_xtb_validation/conformers/selected/conf_0004.xyz",
+      "source_conf_id": 2
+    }
+  ],
+  "request": {
+    "backend_parameters": {
+      "basis": "def2-SVP",
+      "custom_keyword": null,
+      "custom_keywords": null,
+      "gamma": null,
+      "geometry_optimizer": "native",
+      "method": "BP86",
+      "model": "/scratch/20cy91r19/bitbucket/pyatomgen/pyar/AIMNet2/models/aimnet2_wb97m-d3_ens.jpt",
+      "nprocs": 8,
+      "opt_cycles": 350,
+      "opt_target": "minimum",
+      "opt_threshold": "loose",
+      "scf_cycles": 1000,
+      "scf_threshold": "loose",
+      "software": "xtb"
+    },
+    "charge": null,
+    "force_field": "auto",
+    "input": "tetrapeptide.xyz",
+    "input_format": "xyz",
+    "max_iterations": 200,
+    "multiplicity": 1,
+    "num_conformers": 5,
+    "num_threads": 0,
+    "rms_threshold": 0.5,
+    "scftype": "rhf",
+    "seed": 1,
+    "top_n": 5
+  },
+  "selected_results": [
+    "/home/lubaba/crest_xtb_validation/conformers/selected/conf_0000.xyz",
+    "/home/lubaba/crest_xtb_validation/conformers/selected/conf_0001.xyz",
+    "/home/lubaba/crest_xtb_validation/conformers/selected/conf_0002.xyz",
+    "/home/lubaba/crest_xtb_validation/conformers/selected/conf_0003.xyz",
+    "/home/lubaba/crest_xtb_validation/conformers/selected/conf_0004.xyz"
+  ],
+  "source_format": "xyz",
+  "status": "completed",
+  "version": 1,
+  "workflow": "conformer"
+}

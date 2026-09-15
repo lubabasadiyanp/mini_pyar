@@ -1,0 +1,11 @@
+Source,Conformer,Energy_Eh,Status
+PyAR,conf_0000.xyz,-69.010353048363,Success
+PyAR,conf_0001.xyz,-69.006107276157,Success
+PyAR,conf_0002.xyz,-69.006681615830,Success
+PyAR,conf_0003.xyz,-68.996498243400,Success
+PyAR,conf_0004.xyz,-68.985223930095,Success
+CREST,frame_1.xyz,-69.018602434294,Success
+CREST,frame_2.xyz,-69.018443644290,Success
+CREST,frame_3.xyz,-69.018127281409,Success
+CREST,frame_4.xyz,-69.017280921968,Success
+CREST,frame_5.xyz,-69.017258107232,Success
