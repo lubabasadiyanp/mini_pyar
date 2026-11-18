@@ -1,5 +1,21 @@
 # React + TypeScript + Vite
 
+## Run PyAR Molecular locally
+
+Make sure `pyar-cli` and `xtb` are available on `PATH`. From the repository root, start the backend and frontend in separate PowerShell terminals:
+
+```powershell
+backend\.venv\Scripts\python.exe -m uvicorn app:app --app-dir backend --host 127.0.0.1 --port 8000 --reload
+```
+
+```powershell
+npm run dev
+```
+
+Conformer analysis also requires `pyar-conformer`, the PyAR `conformer` extra, and an Open Babel `obabel` executable that supports XYZ input. The backend finds `pyar-conformer` on `PATH` by default; set `PYAR_EXECUTABLE` to use a specific executable.
+
+The aggregation API creates background jobs with `POST /api/aggregation-jobs`, returns their status and workflow structures from `GET /api/aggregation-jobs/{job_id}`, and serves selected XYZ files from `GET /api/aggregation-jobs/{job_id}/structures/{node_id}.xyz`.
+
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
 Currently, two official plugins are available:
