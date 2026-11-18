@@ -2,6 +2,7 @@
 import csv
 import os
 import signal
+import shutil
 import subprocess
 import tempfile
 from pathlib import Path
@@ -9,14 +10,18 @@ from pathlib import Path
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
+from aggregation_service import (
+    aggregation_jobs,
+    install_windows_executable_lookup,
+    install_windows_text_compatibility,
+)
 from xtb_service import optimize_xyz
 
 
 PYAR_EXECUTABLE = Path(
-    os.environ.get(
-        "PYAR_EXECUTABLE",
-        "/home/lubaba/pyar/.venv/bin/pyar-conformer",
-    )
+    os.environ.get("PYAR_EXECUTABLE")
+    or shutil.which("pyar-conformer")
+    or "/home/lubaba/pyar/.venv/bin/pyar-conformer"
 )
 TIMEOUT_SECONDS = int(os.environ.get("PYAR_TIMEOUT_SECONDS", "900"))
 
@@ -45,6 +50,61 @@ app.add_middleware(
 @app.get("/api/health")
 def health():
     return {"status": "ok"}
+
+
+@app.post("/api/aggregation-jobs")
+async def start_aggregation_job(
+    file: UploadFile = File(...),
+    aggregate_size: int = Form(...),
+    orientations: int = Form(...),
+):
+    filename = Path((file.filename or "").replace("\\", "/")).name
+    if not filename.lower().endswith(".xyz"):
+        raise HTTPException(
+            status_code=400,
+            detail="Please upload a file with the .xyz extension.",
+        )
+
+    content = await file.read()
+    if not content:
+        raise HTTPException(status_code=400, detail="The uploaded XYZ file is empty.")
+    try:
+        job = aggregation_jobs.start_job(filename, content, aggregate_size, orientations)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+    return {
+        "job_id": job.job_id,
+        "status": job.status,
+        "progress": job.progress,
+        "message": job.message,
+        "logs": [],
+        "nodes": [],
+    }
+
+
+@app.get("/api/aggregation-jobs/{job_id}")
+def get_aggregation_job(job_id: str):
+    snapshot = aggregation_jobs.snapshot(job_id)
+    if snapshot is None:
+        raise HTTPException(status_code=404, detail="Aggregation job was not found.")
+    return snapshot
+
+
+@app.get("/api/aggregation-jobs/{job_id}/structures/{node_id}.xyz")
+def get_aggregation_structure(job_id: str, node_id: str):
+    structure_path = aggregation_jobs.structure_path(job_id, node_id)
+    if structure_path is None or not structure_path.is_file():
+        raise HTTPException(status_code=404, detail="The requested aggregation structure was not found.")
+    from fastapi.responses import FileResponse
+
+    return FileResponse(
+        structure_path,
+        media_type="chemical/x-xyz",
+        filename=structure_path.name,
+    )
 
 
 @app.post("/api/run-conformer-analysis")
@@ -82,18 +142,56 @@ def run_conformer_analysis(file: UploadFile = File(...)):
             "--software", "xtb",
             "--num-conformers", "5",
             "--top-n", "3",
-            "--num-seeds", "1",
-            "--torsion-rounds", "1",
-            "--torsion-kicks-per-conformer", "2",
         ]
+        command_env = os.environ.copy()
 
         try:
+            if os.name == "nt":
+                try:
+                    for executable_name in ("xtb", "obabel"):
+                        install_windows_executable_lookup(workdir, command_env, executable_name)
+                except RuntimeError as exc:
+                    raise HTTPException(status_code=503, detail=str(exc)) from exc
+                install_windows_text_compatibility(workdir, command_env)
+
+            try:
+                help_result = subprocess.run(
+                    [str(PYAR_EXECUTABLE), "--help"],
+                    cwd=workdir,
+                    env=command_env,
+                    capture_output=True,
+                    text=True,
+                    timeout=30,
+                )
+            except subprocess.TimeoutExpired as exc:
+                raise HTTPException(
+                    status_code=504,
+                    detail="PyAR did not return its conformer options within 30 seconds.",
+                ) from exc
+            if help_result.returncode != 0:
+                raise HTTPException(
+                    status_code=500,
+                    detail=(
+                        "Could not inspect PyAR conformer options: "
+                        f"{help_result.stderr or help_result.stdout}"
+                    ),
+                )
+            supported_options = help_result.stdout + help_result.stderr
+            for option, value in (
+                ("--num-seeds", "1"),
+                ("--torsion-rounds", "1"),
+                ("--torsion-kicks-per-conformer", "2"),
+            ):
+                if option in supported_options:
+                    command.extend((option, value))
+
             process = subprocess.Popen(
                 command,
                 cwd=workdir,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
+                env=command_env,
                 start_new_session=True,
             )
 
@@ -103,12 +201,18 @@ def run_conformer_analysis(file: UploadFile = File(...)):
                 )
 
             except subprocess.TimeoutExpired as exc:
-                os.killpg(process.pid, signal.SIGTERM)
+                if os.name == "nt":
+                    process.terminate()
+                else:
+                    os.killpg(process.pid, signal.SIGTERM)
 
                 try:
                     stdout, stderr = process.communicate(timeout=10)
                 except subprocess.TimeoutExpired:
-                    os.killpg(process.pid, signal.SIGKILL)
+                    if os.name == "nt":
+                        process.kill()
+                    else:
+                        os.killpg(process.pid, signal.SIGKILL)
                     stdout, stderr = process.communicate()
 
                 partial_stdout = (
@@ -139,7 +243,13 @@ def run_conformer_analysis(file: UploadFile = File(...)):
                 detail=f"Could not start PyAR: {exc}",
             ) from exc
 
-        if process.returncode != 0:
+        summary_path = workdir / "conformers" / "summary.csv"
+
+        # Some pyar-conformer launchers exit nonzero after returning a result object.
+        if process.returncode != 0 and not (
+            summary_path.is_file()
+            and "Conformer workflow: completed" in stdout.splitlines()
+        ):
             raise HTTPException(
                 status_code=500,
                 detail={
@@ -148,8 +258,6 @@ def run_conformer_analysis(file: UploadFile = File(...)):
                     "stderr": stderr,
                 },
             )
-
-        summary_path = workdir / "conformers" / "summary.csv"
 
         if not summary_path.is_file():
             raise HTTPException(
